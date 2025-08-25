@@ -18,6 +18,33 @@ eta = 2    # A small positive integer
 beta = tau*eta
 omega = 80
 
+zetas = [0, 4808194, 3765607, 3761513, 5178923, 5496691, 5234739, 5178987,  7778734, 3542485, 
+         2682288, 2129892, 3764867, 7375178, 557458, 7159240,  5010068, 4317364, 2663378, 6705802, 
+         4855975, 7946292, 676590, 7044481,  5152541, 1714295, 2453983, 1460718, 7737789, 4795319, 
+         2815639, 2283733,  3602218, 3182878, 2740543, 4793971, 5269599, 2101410, 3704823, 1159875,  
+         394148, 928749, 1095468, 4874037, 2071829, 4361428, 3241972, 2156050,  3415069, 1759347, 
+         7562881, 4805951, 3756790, 6444618, 6663429, 4430364,  5483103, 3192354, 556856, 3870317, 
+         2917338, 1853806, 3345963, 1858416,  3073009, 1277625, 5744944, 3852015, 4183372, 5157610, 
+         5258977, 8106357,  2508980, 2028118, 1937570, 4564692, 2811291, 5396636, 7270901, 4158088,  
+         1528066, 482649, 1148858, 5418153, 7814814, 169688, 2462444, 5046034,  4213992, 4892034, 
+         1987814, 5183169, 1736313, 235407, 5130263, 3258457,  5801164, 1787943, 5989328, 6125690, 
+         3482206, 4197502, 7080401, 6018354,  7062739, 2461387, 3035980, 621164, 3901472, 7153756, 
+         2925816, 3374250,  1356448, 5604662, 2683270, 5601629, 4912752, 2312838, 7727142, 7921254,  
+         348812, 8052569, 1011223, 6026202, 4561790, 6458164, 6143691, 1744507,  1753, 6444997, 
+         5720892, 6924527, 2660408, 6600190, 8321269, 2772600,  1182243, 87208, 636927, 4415111, 
+         4423672, 6084020, 5095502, 4663471,  8352605, 822541, 1009365, 5926272, 6400920, 1596822, 
+         4423473, 4620952,  6695264, 4969849, 2678278, 4611469, 4829411, 635956, 8129971, 5925040,  
+         4234153, 6607829, 2192938, 6653329, 2387513, 4768667, 8111961, 5199961,  3747250, 2296099, 
+         1239911, 4541938, 3195676, 2642980, 1254190, 8368000,  2998219, 141835, 8291116, 2513018, 
+         7025525, 613238, 7070156, 6161950,  7921677, 6458423, 4040196, 4908348, 2039144, 6500539, 
+         7561656, 6201452,  6757063, 2105286, 6006015, 6346610, 586241, 7200804, 527981, 5637006,  
+         6903432, 1994046, 2491325, 6987258, 507927, 7192532, 7655613, 6545891,  5346675, 8041997, 
+         2647994, 3009748, 5767564, 4148469, 749577, 4357667,  3980599, 2569011, 6764887, 1723229, 
+         1665318, 2028038, 1163598, 5011144,  3994671, 8368538, 7009900, 3020393, 3363542, 214880, 
+         545376, 7609976,  3105558, 7277073, 508145, 7826699, 860144, 3430436, 140244, 6866265,  
+         6195333, 3123762, 2358373, 6187330, 5365997, 6663603, 2926054, 7987710,  8077412, 
+         3531229, 4405932, 4606686, 1900052, 7598542, 1054478, 7648983]
+
 
 
 def IntegerToBits(x,alpha):
@@ -587,10 +614,272 @@ def ExpandMask(rho, mu):
     return y
 
 
-rho = [random.randint(0,255) for _ in range(64)]
-mu = random.randint(0,255)
-y = ExpandMask(rho, mu)
-print(y)
+#rho = [random.randint(0,255) for _ in range(64)]
+#mu = random.randint(0,255)
+#y = ExpandMask(rho, mu)
+#print(y)
+
+def mod_pm(m: int, alpha: int) -> int:
+    """
+    Compute m' = m mod^{±} alpha, i.e. the signed residue of m in the interval −⌈α/2⌉ < m' ≤ ⌊α/2⌋  such that m and m' are congruent modulo alpha.
+    """
+    m_dash = m%alpha
+    if m_dash > np.floor(alpha/2):
+        m_dash = m_dash - alpha
+    return m_dash
+
+
+#r = 10
+#print(mod_pm(r,3))
+
+def Power2Round(r):
+    """
+    Decomposes r into (r1, r0) such that r ≡ r12d + r0 mod q.  
+    
+    Input: r ∈ Zq.  
+    
+    Output: Integers (r1, r0).
+    """
+    r_plus = r%q
+    r0 = mod_pm(r_plus,2**d)
+    return (r_plus - r0)/(2**d), r0
+
+#r = random.randint(0,q-1)
+#r1, r0 = Power2Round(r)
+#print(r, r0, r1)
+
+def Decompose(r):
+    """
+    Decomposes r into (r1, r0) such that r ≡ r1(2γ2) + r0 mod q.  
+    
+    Input: r ∈ Zq.  
+    
+    Output: Integers (r1, r0).
+    """
+    r_plus = r%q
+    r0 = mod_pm(r_plus, int(2*gamma2))
+    if r_plus - r0 == q-1:
+        r1 = 0
+        r0 = r0 - 1
+    else:
+        r1 = (r_plus - r0)/(2*gamma2)
+    return r1, r0
+
+#r = random.randint(0,q-1)
+#r1, r0 = Decompose(r)
+#print(r, r0, r1)
+
+def HighBits(r):
+    """
+    Computes the high bits of r.  
+    
+    Input: r ∈ Zq.  
+    
+    Output: Integer r1.
+    """
+    r1, r0 = Decompose(r)
+    return r1
+
+def LowBits(r):
+    """
+    Computes the low bits of r.  
+    
+    Input: r ∈ Zq.  
+    
+    Output: Integer r0.
+    """
+    r1, r0 = Decompose(r)
+    return r0
+
+def MakeHint(z,r):
+    """
+    Computes hint bit indicating whether adding z to r alters the high bits of r.  
+    
+    Input: z, r ∈ Zq. 
+    
+    Output: Boolean.
+    """
+    r1 = HighBits(r)
+    v1 = HighBits(r+z)
+    return r1 != v1
+
+#r = random.randint(0,q-1)
+#z = random.randint(-gamma1 + 1, gamma1)
+#print(MakeHint(z,r))
+
+def UseHint(r, h):
+    """
+    Returns the high bits of r adjusted according to hint h.  
+    
+    Input: Boolean h, r ∈ Zq.  
+    
+    Output: r1 ∈ Z with 0 ≤ r1 ≤ q−1 .
+    """
+    m = (q-1)/(2*gamma2)
+    r1, r0 = Decompose(r)
+    if h == 1 and r0 > 0:
+        return (r1 + 1)%m
+    if h == 1 and r0 <= 0:
+        return (r1 - 1)%m
+    else:
+        return r1
+
+#r = random.randint(0,q-1)
+#z = random.randint(-gamma1 + 1, gamma1)
+#h = MakeHint(z,r)
+#r1 = UseHint(r,h)
+#print(r, z, h, r1)
+
+
+def NTT(w):
+    """
+    Computes the NTT.  
+    
+    Input: Polynomial w(X) = ∑255  j=0 wjXj ∈ Rq.  
+    
+    Output: ŵ = (ŵ[0], ... , ŵ[255]) ∈ Tq.
+    """
+    w_hat = np.zeros(256, dtype=int)
+    for j in range(256):
+        w_hat[j] = w[j]
+    m = 0
+    len = 128
+    while len >= 1:
+        start = 0
+        while start < 256:
+            m = m+1
+            z = zetas[m]
+            for j in range(start, start + len):
+                t = z*w_hat[j + len]%q
+                w_hat[j+len] = (w_hat[j] - t)%q
+                w_hat[j] = (w_hat[j] + t)%q
+            start = start + 2*len
+        len = int(np.floor(len/2))
+    return w_hat
+
+#w = [random.randint(0,q-1) for _ in range(256)]
+#print(w, NTT(w))
+
+def InvNTT(w_hat):
+    """
+    Computes the inverse of the NTT.  
+    
+    Input: ŵ = (ŵ[0], ... , ŵ[255]) ∈ Tq.  
+    
+    Output: Polynomial w(X) = ∑255  j=0 wjXj ∈ Rq.
+    """
+    w = np.zeros(256, dtype=int)
+    for j in range(256):
+        w[j] = w_hat[j]
+    m = 256
+    len = 1
+    while len < 256:
+        start = 0
+        while start < 256:
+            m = m-1
+            z = -zetas[m]
+            for j in range(start, start + len):
+                t = w[j]
+                w[j] = (t + w[j + len])%q
+                w[j + len] = (t - w[j + len])%q
+                w[j + len] = (z*w[j + len])%q
+            start = start + 2*len
+        len = 2*len
+    f = 8347681
+    for j in range(256):
+        w[j] = f* w[j]%q
+    return w
+
+#w = [random.randint(0,q-1) for _ in range(256)]
+#w_hat = NTT(w)
+#w_return = InvNTT(w_hat)
+#print(w == w_return)
+
+def BitRev8(m):
+    """
+    Transforms a byte by reversing the order of bits in its 8-bit binary expansion.  
+    
+    Input: A byte m ∈ [0, 255]. 
+    
+    Output: A byte r ∈ [0, 255].
+    """
+    b = IntegerToBits(m, 8)
+    b_rev = np.zeros(8, dtype=int)
+    for i in range(8):
+        b_rev[i] = b[7-i]
+    r = BitsToInteger(b_rev, 8)
+    return r
+
+#print(BitRev8(171))  ## should be 213
+
+
+def AddNTT(a_hat, b_hat):
+    """
+    Computes the sum â + b̂ of two elements â, b̂ ∈ Tq.
+    
+    Input: â, b ∈ Tq. 
+    
+    Output: c ̂ ∈ Tq
+    """
+    c_hat = np.zeros(256, dtype=int)
+    for j in range(256):
+        c_hat[j] = (a_hat[j] + b_hat[j])%q
+    return c_hat
+
+
+def MultiplyNTT(a_hat, b_hat):
+    """
+    Computes the product â · b̂ of two elements â, b̂ ∈ Tq.
+    
+    Input: â, b ∈ Tq. 
+    
+    Output: c ̂ ∈ Tq
+    """
+    c_hat = np.zeros(256, dtype=int)
+    for j in range(256):
+        c_hat[j] = (a_hat[j] * b_hat[j])%q
+    return c_hat
+
+def AddVectorNTT(v_hat, w_hat):
+    """
+    Computes the sum v̂ + ŵ of two vectors v̂, ŵ over Tq.  
+    
+    Input: l ∈ N, v̂ ∈ Tql, ŵ ∈ Tql.  
+    
+    Output: û ∈ Tql.
+    """
+    u_hat = np.zeros((l,256), dtype=int)
+    for i in range(l):
+        u_hat[i] = AddNTT(v_hat[i], w_hat[i])
+    return u_hat
+
+def ScalarVectorNTT(c_hat, v_hat):
+    """
+    Computes the product c ̂∘ v̂ of a scalar c ̂and a vector v̂ over Tq.  
+    
+    Input: c ̂ ∈ Tq, l ∈ N, v̂ ∈ Tql.  
+    
+    Output: ŵ ∈ Tql.
+    """
+    w_hat = np.zeros((l,256), dtype=int)
+    for i in range(l):
+        w_hat[i] = MultiplyNTT(c_hat, v_hat[i])
+    return w_hat
+
+def MatrixVectorNTT(M_hat, v_hat):
+    """
+    Computes the product M̂ ∘ v̂ of a matrix M̂ and a vector v̂ over Tq.  
+    
+    Input: k, l ∈ N, M ∈ Tqk×l ̂ q .  ̂ ,v ∈ Tl  
+    
+    Output: ŵ ∈ Tqk.
+    """
+    w_hat = np.zeros((k,256), dtype=int)
+    for i in range(k):
+        for j in range(l):
+            w_hat[i] = AddNTT(w_hat[i], MultiplyNTT(M_hat[i,j], v_hat[j]))
+    return w_hat
+
 #print(BytesToBits(np.array([171, 171])))   
 #print(BitsToBytes(BytesToBits(np.array([171, 170]))))
 #print(CoeffFromThreeBytes(128, 0, 128))
