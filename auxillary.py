@@ -59,8 +59,8 @@ def IntegerToBits(x,alpha):
     y = np.zeros(alpha, dtype=int)
     x_dash = x
     for i in range(alpha):
-        y[i] = x_dash%2
-        x_dash = np.floor(x_dash/2)
+        y[i] = int(x_dash%2)
+        x_dash = int(np.floor(x_dash/2))
     return y
     
 
@@ -89,10 +89,10 @@ def IntegerToBytes(x,alpha):
     """
     y = np.zeros(alpha, dtype=int)
     x_dash = x
-    for i in range(alpha -1):
-        y[i] = x_dash%256
+    for i in range(alpha):
+        y[i] = int(x_dash%256)
         x_dash = np.floor(x_dash/256)
-    return y
+    return y.tolist()
 
 
 def BitsToBytes(y):
@@ -286,7 +286,7 @@ def pkEncode(rho, t1):
     Output: Public key pk in B^32+32k*bitlen(q-1)-d
     """
     bitlen_q = (q - 1).bit_length()
-    pk = rho
+    pk = rho.copy()
     for i in range(k):
         pk.extend(SimpleBitPack(t1[i], 2**(bitlen_q - d) - 1))
     return pk
@@ -510,10 +510,11 @@ def RejNTTPoly(rho):
     ctx.update(bytearray(rho))
     while j < 256:
         s = list(ctx.read(3))
-        a_tilde[j] = CoeffFromThreeBytes(s[0], s[1], s[2])
-        if a_tilde[j] != "⊥":
+        result = CoeffFromThreeBytes(s[0], s[1], s[2])
+        if result != "⊥":
+            a_tilde[j] = result
             j = j+1
-    return a_tilde
+    return a_tilde.tolist()
 
 
 #rho = [random.randint(0,255) for _ in range(34)]
@@ -644,6 +645,22 @@ def Power2Round(r):
     r0 = mod_pm(r_plus,2**d)
     return (r_plus - r0)/(2**d), r0
 
+
+def Power2RoundVec(r):
+    """
+    Applies Power2Round to each coefficient of polynomial r.
+    
+    Input: r ∈ Rq.
+    
+    Output: Two polynomials r1, r0 ∈ Z[x]/(x^256 + 1) such that r ≡ r12d + r0 mod q.
+    """
+    r1 = np.zeros((k,256), dtype=int)
+    r0 = np.zeros((k,256), dtype=int)
+    for i in range(256):
+        for j in range(k):
+            r1[j][i], r0[j][i] = Power2Round(r[j][i])
+    return r1, r0
+
 #r = random.randint(0,q-1)
 #r1, r0 = Power2Round(r)
 #print(r, r0, r1)
@@ -757,6 +774,17 @@ def NTT(w):
         len = int(np.floor(len/2))
     return w_hat
 
+def ListNTT(A): ##Custom
+    """
+    Computes the NTT of each polynomial in a list of polynomials.
+    Input: A list of polynomials in Rq.
+    Output: A list of polynomials in Tq.
+    """
+    A_hat = np.zeros((len(A),256), dtype=int)
+    for i in range(len(A)):
+        A_hat[i] = NTT(A[i])
+    return A_hat
+
 #w = [random.randint(0,q-1) for _ in range(256)]
 #print(w, NTT(w))
 
@@ -789,6 +817,17 @@ def InvNTT(w_hat):
     for j in range(256):
         w[j] = f* w[j]%q
     return w
+
+def ListInvNTT(A_hat): ##Custom
+    """
+    Computes the inverse NTT of each polynomial in a list of polynomials.
+    Input: A list of polynomials in Tq.
+    Output: A list of polynomials in Rq.
+    """         
+    A = np.zeros((len(A_hat),256), dtype=int)
+    for i in range(len(A_hat)):
+        A[i] = InvNTT(A_hat[i])
+    return A
 
 #w = [random.randint(0,q-1) for _ in range(256)]
 #w_hat = NTT(w)

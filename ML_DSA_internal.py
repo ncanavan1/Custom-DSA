@@ -40,22 +40,20 @@ def KeyGen_internal(zeta):
 
     A_hat = aux.ExpandA(rho)
     s1, s2 = aux.ExpandS(rho_dash)
-    inter_ntt = aux.NTT(s1)
-    inter = aux.MatrixVectorNTT(A_hat, inter_ntt)
-    t = aux.InvNTT(inter) + s2
-    t1, t0 = aux.Power2Round(t)
-    pk = aux.pkEncode(rho, t1)
+    t = aux.ListInvNTT(aux.MatrixVectorNTT(A_hat, aux.ListNTT(s1))) + s2
+    t1, t0 = aux.Power2RoundVec(t)
+    pk = np.asarray(aux.pkEncode(rho, t1))
     
     ctx = SHAKE256.new()
     ctx.update(bytearray(pk))
     tr = list(ctx.read(64))
 
-    sk = aux.skEncode(rho, K, tr, s1, s2, t0)
+    sk = np.asarray(aux.skEncode(rho, K, tr, s1, s2, t0))
 
     return pk, sk
 
 zeta = [random.randint(0,255) for _ in range(32)]
 pk, sk = KeyGen_internal(zeta)
-print("Public Key: ", pk)
-print("Secret Key: ", sk)
+print("Public Key: ", pk.tolist())
+print("Secret Key: ", sk.tolist())
 
