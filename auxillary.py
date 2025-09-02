@@ -697,6 +697,18 @@ def HighBits(r):
     r1, r0 = Decompose(r)
     return r1
 
+def HighBitsVec(r):
+    """
+    Computes the high bits of each coefficient in r.
+    Input: r ∈ Rq^k.
+    Output: Polynomial r1 ∈ Rq.
+    """
+    r1 = np.zeros((k,256), dtype=int)
+    for i in range(256):
+        for j in range(k):
+            r1[j][i] = HighBits(r[j][i])
+    return r1
+
 def LowBits(r):
     """
     Computes the low bits of r.  
@@ -706,6 +718,18 @@ def LowBits(r):
     Output: Integer r0.
     """
     r1, r0 = Decompose(r)
+    return r0
+
+def LowBitsVec(r):
+    """
+    Computes the low bits of each coefficient in r.
+    Input: r ∈ Rq^k.
+    Output: Polynomial r0 ∈ Rq^k.
+    """
+    r0 = np.zeros((k,256), dtype=int)
+    for i in range(256):
+        for j in range(k):
+            r0[j][i] = LowBits(r[j][i])
     return r0
 
 def MakeHint(z,r):
