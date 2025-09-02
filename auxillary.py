@@ -120,7 +120,7 @@ def BytesToBits(z):
     """
     alpha = len(z)
     y = np.zeros(8*alpha, dtype=int)
-    z_dash = z
+    z_dash = z.copy()
     for i in range(alpha): ##alpha not alpha-1
         for j in range(8):
             y[(8*i) + j] = z_dash[i]%2
@@ -142,7 +142,7 @@ def CoeffFromThreeBytes(b0, b1, b2):
     if b2_dash > 127:
         b2_dash = b2_dash - 128
     
-    z = 2**16 * b2_dash + 2**8 * b1 + b0
+    z = (2**16)*b2_dash + ((2**8)*b1) + b0
 
     if z < q:
         return z
@@ -351,7 +351,7 @@ def skDecode(sk):
 
     rho = sk[0:32]
     K = sk[32:64]
-    tr = sk[64:128]
+    tr = np.asarray(sk[64:128],dtype=int).tolist()
     y = np.array(sk[128:index_y_end]).reshape((l,32*bitlen_eta))
     z = np.array(sk[index_y_end:index_z_end]).reshape((k,32*bitlen_eta))
     w = np.array(sk[index_z_end:]).reshape((k,32*d))
@@ -629,7 +629,27 @@ def mod_pm(m: int, alpha: int) -> int:
         m_dash = m_dash - alpha
     return m_dash
 
+def mod_pm_vec(v, alpha):
+    """
+    Apply mod_pm to each coefficient of a polynomial vector v.
+    """
+    v_dash = np.zeros(v.shape, dtype=int)
+    for i in range(len(v)):
+        for j in range(len(v[i])):
+            v_dash[i][j] = mod_pm(v[i][j], alpha)
+    return v_dash
 
+def vector_inf_norm(v, alpha):
+    """
+    Compute the infinity norm of a vector v.
+    """
+    max_val = 0
+    for poly in v:
+        for i in range(len(poly)):
+            val = mod_pm(poly[i], alpha)
+            if abs(val) > max_val:
+                max_val = abs(val)
+    return max_val
 #r = 10
 #print(mod_pm(r,3))
 
@@ -744,6 +764,20 @@ def MakeHint(z,r):
     v1 = HighBits(r+z)
     return r1 != v1
 
+def MakeHintVec(z, r):
+    """
+    Computes hint bits for each coefficient in z and r.
+    
+    Input: z, r ∈ Rq^k.
+    
+    Output: Polynomial h ∈ R2^k.
+    """
+    h = np.zeros((k,256), dtype=int)
+    for i in range(256):
+        for j in range(k):
+            h[j][i] = MakeHint(z[j][i], r[j][i])
+    return h    
+
 #r = random.randint(0,q-1)
 #z = random.randint(-gamma1 + 1, gamma1)
 #print(MakeHint(z,r))
@@ -764,6 +798,20 @@ def UseHint(r, h):
         return (r1 - 1)%m
     else:
         return r1
+    
+def UseHintVec(r, h):
+    """
+    Applies UseHint to each coefficient in r and h.
+    
+    Input: h ∈ R2^k, r ∈ Rq^k.
+    
+    Output: Polynomial r1 ∈ Rq^k with coefficients between 0 and q-1.
+    """
+    r1 = np.zeros((k,256), dtype=int)
+    for i in range(256):
+        for j in range(k):
+            r1[j][i] = UseHint(r[j][i], h[j][i])
+    return r1
 
 #r = random.randint(0,q-1)
 #z = random.randint(-gamma1 + 1, gamma1)
